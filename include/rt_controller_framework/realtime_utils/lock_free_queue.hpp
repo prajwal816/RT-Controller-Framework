@@ -107,6 +107,14 @@ public:
     return Capacity;
   }
 
+  /// @brief Reset the queue to empty state.
+  /// @note Only safe when no concurrent push/pop is happening.
+  void reset() noexcept
+  {
+    head_.store(0, std::memory_order_relaxed);
+    tail_.store(0, std::memory_order_relaxed);
+  }
+
 private:
   std::array<T, Capacity + 1> buffer_{};
 
