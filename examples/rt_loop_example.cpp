@@ -27,6 +27,7 @@
  *   ros2 run rt_controller_framework rt_loop_example
  */
 
+#include <cinttypes>
 #include <cstdio>
 #include <cstdlib>
 

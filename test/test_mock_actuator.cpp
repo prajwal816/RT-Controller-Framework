@@ -1,10 +1,16 @@
-/**
- * @file test_mock_actuator.cpp
- * @brief GTest unit tests for the mock actuator hardware interface.
- *
- * Tests the lifecycle (configure → activate → read/write → deactivate)
- * and verifies that Euler integration produces expected state transitions.
- */
+// Copyright 2024 RT Controller Framework Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <gtest/gtest.h>
 
@@ -17,10 +23,9 @@
 
 using rt_controller_framework::hardware_interface::MockActuatorSystem;
 
-/**
- * @brief Helper to create a HardwareInfo struct with test joints.
- */
-static ::hardware_interface::HardwareInfo make_test_info(int num_joints) {
+/// @brief Helper to create a HardwareInfo struct with test joints.
+static ::hardware_interface::HardwareInfo make_test_info(int num_joints)
+{
   ::hardware_interface::HardwareInfo info;
   info.name = "test_actuator";
   info.type = "system";
@@ -66,7 +71,8 @@ static ::hardware_interface::HardwareInfo make_test_info(int num_joints) {
   return info;
 }
 
-TEST(MockActuatorTest, Initialization) {
+TEST(MockActuatorTest, Initialization)
+{
   MockActuatorSystem hw;
   auto info = make_test_info(3);
 
@@ -74,19 +80,21 @@ TEST(MockActuatorTest, Initialization) {
   EXPECT_EQ(result, ::hardware_interface::CallbackReturn::SUCCESS);
 }
 
-TEST(MockActuatorTest, ExportInterfaces) {
+TEST(MockActuatorTest, ExportInterfaces)
+{
   MockActuatorSystem hw;
   auto info = make_test_info(2);
   hw.on_init(info);
 
   auto state_ifs = hw.export_state_interfaces();
-  EXPECT_EQ(state_ifs.size(), 6u);  // 2 joints × 3 interfaces
+  EXPECT_EQ(state_ifs.size(), 6u);  // 2 joints x 3 interfaces
 
   auto cmd_ifs = hw.export_command_interfaces();
   EXPECT_EQ(cmd_ifs.size(), 6u);
 }
 
-TEST(MockActuatorTest, Lifecycle) {
+TEST(MockActuatorTest, Lifecycle)
+{
   MockActuatorSystem hw;
   auto info = make_test_info(1);
   hw.on_init(info);
@@ -103,7 +111,8 @@ TEST(MockActuatorTest, Lifecycle) {
   EXPECT_EQ(r3, ::hardware_interface::CallbackReturn::SUCCESS);
 }
 
-TEST(MockActuatorTest, ReadWriteCycle) {
+TEST(MockActuatorTest, ReadWriteCycle)
+{
   MockActuatorSystem hw;
   auto info = make_test_info(1);
   hw.on_init(info);
@@ -125,7 +134,8 @@ TEST(MockActuatorTest, ReadWriteCycle) {
   }
 }
 
-TEST(MockActuatorTest, StateInterfaceValues) {
+TEST(MockActuatorTest, StateInterfaceValues)
+{
   MockActuatorSystem hw;
   auto info = make_test_info(1);
   hw.on_init(info);
