@@ -1,12 +1,19 @@
-/**
- * @file rt_thread_config.cpp
- * @brief Implementation of real-time thread configuration utilities.
- *
- * Linux: Uses sched_setscheduler, mlockall, sched_setaffinity.
- * Other platforms: No-op stubs that return informative messages.
- *
- * @copyright Copyright (c) 2024. Apache-2.0 License.
- */
+// Copyright 2024 RT Controller Framework Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/// @file rt_thread_config.cpp
+/// @brief Implementation of real-time thread configuration utilities.
 
 #include "rt_controller_framework/realtime_utils/rt_thread_config.hpp"
 
@@ -23,17 +30,20 @@
 #include <fstream>
 #endif
 
-namespace rt_controller_framework {
-namespace realtime_utils {
+namespace rt_controller_framework
+{
+namespace realtime_utils
+{
 
-ThreadConfigResult set_thread_rt_priority(int priority) {
+ThreadConfigResult set_thread_rt_priority(int priority)
+{
   ThreadConfigResult result;
 
 #ifdef __linux__
   if (priority < 1 || priority > 99) {
     result.success = false;
     result.message = "RT priority must be between 1 and 99, got " +
-                     std::to_string(priority);
+      std::to_string(priority);
     return result;
   }
 
@@ -47,20 +57,21 @@ ThreadConfigResult set_thread_rt_priority(int priority) {
   } else {
     result.success = false;
     result.message = "Failed to set RT priority: " +
-                     std::string(std::strerror(errno)) +
-                     " (try running with sudo or CAP_SYS_NICE)";
+      std::string(std::strerror(errno)) +
+      " (try running with sudo or CAP_SYS_NICE)";
   }
 #else
   result.success = false;
   result.message = "RT thread priority not available on this platform "
-                   "(Linux required)";
+    "(Linux required)";
   (void)priority;
 #endif
 
   return result;
 }
 
-ThreadConfigResult lock_memory() {
+ThreadConfigResult lock_memory()
+{
   ThreadConfigResult result;
 
 #ifdef __linux__
@@ -71,19 +82,20 @@ ThreadConfigResult lock_memory() {
   } else {
     result.success = false;
     result.message = "Failed to lock memory: " +
-                     std::string(std::strerror(errno)) +
-                     " (try running with sudo or CAP_IPC_LOCK)";
+      std::string(std::strerror(errno)) +
+      " (try running with sudo or CAP_IPC_LOCK)";
   }
 #else
   result.success = false;
   result.message = "Memory locking not available on this platform "
-                   "(Linux required)";
+    "(Linux required)";
 #endif
 
   return result;
 }
 
-ThreadConfigResult set_cpu_affinity(const std::vector<int>& cpu_ids) {
+ThreadConfigResult set_cpu_affinity(const std::vector<int> & cpu_ids)
+{
   ThreadConfigResult result;
 
   if (cpu_ids.empty()) {
@@ -103,11 +115,13 @@ ThreadConfigResult set_cpu_affinity(const std::vector<int>& cpu_ids) {
     if (cpu < 0 || cpu >= max_cpus) {
       result.success = false;
       result.message = "Invalid CPU ID " + std::to_string(cpu) +
-                       " (system has " + std::to_string(max_cpus) + " cores)";
+        " (system has " + std::to_string(max_cpus) + " cores)";
       return result;
     }
     CPU_SET(cpu, &cpuset);
-    if (cores_str.str().length() > 0) cores_str << ",";
+    if (cores_str.str().length() > 0) {
+      cores_str << ",";
+    }
     cores_str << cpu;
   }
 
@@ -118,19 +132,20 @@ ThreadConfigResult set_cpu_affinity(const std::vector<int>& cpu_ids) {
   } else {
     result.success = false;
     result.message = "Failed to set CPU affinity: " +
-                     std::string(std::strerror(errno));
+      std::string(std::strerror(errno));
   }
 #else
   result.success = false;
   result.message = "CPU affinity not available on this platform "
-                   "(Linux required)";
+    "(Linux required)";
   (void)cpu_ids;
 #endif
 
   return result;
 }
 
-bool configure_rt_thread(int priority, const std::vector<int>& cpu_ids) {
+bool configure_rt_thread(int priority, const std::vector<int> & cpu_ids)
+{
   bool all_ok = true;
 
   // Step 1: Lock memory
@@ -156,7 +171,8 @@ bool configure_rt_thread(int priority, const std::vector<int>& cpu_ids) {
   return all_ok;
 }
 
-std::string get_rt_system_info() {
+std::string get_rt_system_info()
+{
   std::ostringstream info;
   info << "=== RT System Information ===\n";
 
@@ -170,9 +186,10 @@ std::string get_rt_system_info() {
 
     // Check for PREEMPT_RT
     std::string release(uname_buf.release);
-    bool has_rt = (release.find("rt") != std::string::npos) ||
-                  (release.find("RT") != std::string::npos) ||
-                  (release.find("PREEMPT_RT") != std::string::npos);
+    bool has_rt =
+      (release.find("rt") != std::string::npos) ||
+      (release.find("RT") != std::string::npos) ||
+      (release.find("PREEMPT_RT") != std::string::npos);
     info << "RT Kernel: " << (has_rt ? "YES (PREEMPT_RT detected)" : "NO")
          << "\n";
   }
@@ -195,11 +212,17 @@ std::string get_rt_system_info() {
 
   // Current scheduler
   int policy = sched_getscheduler(0);
-  const char* policy_name = "UNKNOWN";
+  const char * policy_name = "UNKNOWN";
   switch (policy) {
-    case SCHED_OTHER: policy_name = "SCHED_OTHER (non-RT)"; break;
-    case SCHED_FIFO:  policy_name = "SCHED_FIFO (RT)"; break;
-    case SCHED_RR:    policy_name = "SCHED_RR (RT)"; break;
+    case SCHED_OTHER:
+      policy_name = "SCHED_OTHER (non-RT)";
+      break;
+    case SCHED_FIFO:
+      policy_name = "SCHED_FIFO (RT)";
+      break;
+    case SCHED_RR:
+      policy_name = "SCHED_RR (RT)";
+      break;
   }
   info << "Scheduler: " << policy_name << "\n";
 

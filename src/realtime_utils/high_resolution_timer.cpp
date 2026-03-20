@@ -1,83 +1,96 @@
-/**
- * @file high_resolution_timer.cpp
- * @brief Implementation of the high-resolution periodic timer.
- *
- * @copyright Copyright (c) 2024. Apache-2.0 License.
- */
+// Copyright 2024 RT Controller Framework Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/// @file high_resolution_timer.cpp
+/// @brief Implementation of the high-resolution periodic timer.
 
 #include "rt_controller_framework/realtime_utils/high_resolution_timer.hpp"
 
 #include <thread>
 
-namespace rt_controller_framework {
-namespace realtime_utils {
+namespace rt_controller_framework
+{
+namespace realtime_utils
+{
 
 HighResolutionTimer::HighResolutionTimer(uint32_t frequency_hz)
-    : frequency_hz_(frequency_hz),
-      period_(std::chrono::duration_cast<Duration>(
-          std::chrono::microseconds(1000000 / frequency_hz))),
-      start_time_(Clock::now()),
-      next_wakeup_(Clock::now()),
-      last_wakeup_(Clock::now()) {}
+: frequency_hz_(frequency_hz),
+  period_(std::chrono::duration_cast<duration>(
+    std::chrono::microseconds(1000000 / frequency_hz))),
+  start_time_(clock::now()),
+  next_wakeup_(clock::now()),
+  last_wakeup_(clock::now())
+{
+}
 
-void HighResolutionTimer::start() {
-  start_time_ = Clock::now();
+void HighResolutionTimer::start() noexcept
+{
+  start_time_ = clock::now();
   next_wakeup_ = start_time_ + period_;
   last_wakeup_ = start_time_;
   cycle_count_ = 0;
   actual_period_us_ = 0;
-  overrun_ = false;
 }
 
-void HighResolutionTimer::wait_for_next_cycle() {
-  // Sleep until the next target wakeup time
+void HighResolutionTimer::wait_for_next_cycle() noexcept
+{
+  // Sleep until the next scheduled wakeup
   std::this_thread::sleep_until(next_wakeup_);
 
   // Measure actual period
-  auto now = Clock::now();
-  actual_period_us_ =
-      std::chrono::duration_cast<std::chrono::microseconds>(now - last_wakeup_)
-          .count();
-
-  // Check for deadline overrun (> 1.5× period)
-  int64_t threshold = get_period_us() + (get_period_us() / 2);
-  overrun_ = (actual_period_us_ > threshold);
-
-  // Advance state
+  auto now = clock::now();
+  auto actual = std::chrono::duration_cast<std::chrono::microseconds>(
+    now - last_wakeup_);
+  actual_period_us_ = actual.count();
   last_wakeup_ = now;
-  next_wakeup_ += period_;
-  ++cycle_count_;
 
-  // If we fell behind, reset the wakeup target to prevent cascading delays
-  if (next_wakeup_ < now) {
+  // Schedule next cycle — advance from the ideal wakeup, not 'now',
+  // to prevent accumulating drift. But if we overran significantly
+  // (> 2× period), reset to prevent cascading delays.
+  next_wakeup_ += period_;
+
+  if (now > next_wakeup_ + period_) {
+    // Overrun recovery: reset the wakeup target
     next_wakeup_ = now + period_;
   }
+
+  ++cycle_count_;
 }
 
-int64_t HighResolutionTimer::get_period_us() const {
-  return std::chrono::duration_cast<std::chrono::microseconds>(period_).count();
-}
-
-int64_t HighResolutionTimer::get_actual_period_us() const {
+int64_t HighResolutionTimer::get_actual_period_us() const noexcept
+{
   return actual_period_us_;
 }
 
-uint32_t HighResolutionTimer::get_frequency_hz() const {
-  return frequency_hz_;
+duration HighResolutionTimer::get_elapsed() const noexcept
+{
+  return clock::now() - start_time_;
 }
 
-uint64_t HighResolutionTimer::get_cycle_count() const {
+uint64_t HighResolutionTimer::get_cycle_count() const noexcept
+{
   return cycle_count_;
 }
 
-int64_t HighResolutionTimer::get_elapsed_us() const {
-  return std::chrono::duration_cast<std::chrono::microseconds>(
-             Clock::now() - start_time_)
-      .count();
+duration HighResolutionTimer::get_period() const noexcept
+{
+  return period_;
 }
 
-bool HighResolutionTimer::has_overrun() const {
-  return overrun_;
+uint32_t HighResolutionTimer::get_frequency_hz() const noexcept
+{
+  return frequency_hz_;
 }
 
 }  // namespace realtime_utils

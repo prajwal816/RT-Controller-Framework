@@ -1,13 +1,19 @@
-/**
- * @file high_resolution_timer.hpp
- * @brief High-resolution periodic timer for deterministic real-time loops.
- *
- * Uses std::chrono::steady_clock for monotonic, high-resolution timing.
- * Provides sleep_until-based periodic wakeups to achieve 1kHz (or
- * arbitrary frequency) control loops with minimal jitter.
- *
- * @copyright Copyright (c) 2024. Apache-2.0 License.
- */
+// Copyright 2024 RT Controller Framework Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/// @file high_resolution_timer.hpp
+/// @brief High-resolution periodic timer for deterministic control loops.
 
 #ifndef RT_CONTROLLER_FRAMEWORK__REALTIME_UTILS__HIGH_RESOLUTION_TIMER_HPP_
 #define RT_CONTROLLER_FRAMEWORK__REALTIME_UTILS__HIGH_RESOLUTION_TIMER_HPP_
@@ -15,93 +21,54 @@
 #include <chrono>
 #include <cstdint>
 
-namespace rt_controller_framework {
-namespace realtime_utils {
+namespace rt_controller_framework
+{
+namespace realtime_utils
+{
 
-/**
- * @brief A high-resolution periodic timer for real-time control loops.
- *
- * Usage:
- * @code
- *   HighResolutionTimer timer(1000);  // 1kHz
- *   timer.start();
- *   while (running) {
- *     timer.wait_for_next_cycle();
- *     // ... do RT work ...
- *     auto dt = timer.get_actual_period_us();
- *   }
- * @endcode
- */
-class HighResolutionTimer {
- public:
-  using Clock = std::chrono::steady_clock;
-  using TimePoint = Clock::time_point;
-  using Duration = Clock::duration;
+/// @brief Precise periodic timer using steady_clock and sleep_until.
+class HighResolutionTimer
+{
+public:
+  using clock = std::chrono::steady_clock;
+  using time_point = clock::time_point;
+  using duration = clock::duration;
 
-  /**
-   * @brief Construct a timer with the given frequency.
-   * @param frequency_hz Desired loop frequency in Hz (e.g. 1000 for 1kHz).
-   */
+  /// @brief Construct timer with desired frequency.
+  /// @param frequency_hz Control loop frequency (e.g. 1000 for 1kHz).
   explicit HighResolutionTimer(uint32_t frequency_hz);
 
-  /**
-   * @brief Reset and start the timer. Records the initial time point.
-   */
-  void start();
+  /// @brief Start (or restart) the timer.
+  void start() noexcept;
 
-  /**
-   * @brief Block until the next cycle boundary.
-   *
-   * Uses std::this_thread::sleep_until() for precise, non-spinning waits.
-   * Automatically advances the target wakeup time by one period.
-   */
-  void wait_for_next_cycle();
+  /// @brief Sleep until the next cycle boundary.
+  void wait_for_next_cycle() noexcept;
 
-  /**
-   * @brief Get the configured period in microseconds.
-   * @return Period in µs.
-   */
-  [[nodiscard]] int64_t get_period_us() const;
+  /// @brief Get the measured period of the last completed cycle.
+  /// @return Actual period in microseconds.
+  [[nodiscard]] int64_t get_actual_period_us() const noexcept;
 
-  /**
-   * @brief Get the actual elapsed time of the last completed cycle.
-   * @return Actual period in µs.
-   */
-  [[nodiscard]] int64_t get_actual_period_us() const;
+  /// @brief Get total elapsed time since start().
+  /// @return Elapsed duration.
+  [[nodiscard]] duration get_elapsed() const noexcept;
 
-  /**
-   * @brief Get the configured frequency.
-   * @return Frequency in Hz.
-   */
-  [[nodiscard]] uint32_t get_frequency_hz() const;
+  /// @brief Get the number of completed cycles.
+  [[nodiscard]] uint64_t get_cycle_count() const noexcept;
 
-  /**
-   * @brief Get the number of completed cycles since start().
-   * @return Cycle count.
-   */
-  [[nodiscard]] uint64_t get_cycle_count() const;
+  /// @brief Get the configured period.
+  [[nodiscard]] duration get_period() const noexcept;
 
-  /**
-   * @brief Get the total elapsed time since start().
-   * @return Elapsed time in microseconds.
-   */
-  [[nodiscard]] int64_t get_elapsed_us() const;
+  /// @brief Get the configured frequency.
+  [[nodiscard]] uint32_t get_frequency_hz() const noexcept;
 
-  /**
-   * @brief Check if a deadline overrun occurred on the last cycle.
-   * @return true if the actual period exceeded 1.5× the configured period.
-   */
-  [[nodiscard]] bool has_overrun() const;
-
- private:
+private:
   uint32_t frequency_hz_;
-  Duration period_;
-  TimePoint start_time_;
-  TimePoint next_wakeup_;
-  TimePoint last_wakeup_;
+  duration period_;
+  time_point start_time_;
+  time_point next_wakeup_;
+  time_point last_wakeup_;
   int64_t actual_period_us_{0};
   uint64_t cycle_count_{0};
-  bool overrun_{false};
 };
 
 }  // namespace realtime_utils
