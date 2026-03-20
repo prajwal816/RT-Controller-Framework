@@ -1,7 +1,16 @@
-/**
- * @file test_lock_free_queue.cpp
- * @brief GTest unit tests for the SPSC lock-free ring buffer.
- */
+// Copyright 2024 RT Controller Framework Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <gtest/gtest.h>
 
@@ -13,16 +22,18 @@
 
 using rt_controller_framework::realtime_utils::LockFreeQueue;
 
-// ─── Basic Operations ───────────────────────────────────────────────────────
+// --- Basic Operations ---
 
-TEST(LockFreeQueueTest, EmptyOnConstruction) {
+TEST(LockFreeQueueTest, EmptyOnConstruction)
+{
   LockFreeQueue<int, 8> q;
   EXPECT_TRUE(q.empty());
   EXPECT_EQ(q.size(), 0u);
   EXPECT_EQ(q.capacity(), 8u);
 }
 
-TEST(LockFreeQueueTest, PushAndPop) {
+TEST(LockFreeQueueTest, PushAndPop)
+{
   LockFreeQueue<int, 4> q;
 
   EXPECT_TRUE(q.try_push(42));
@@ -35,7 +46,8 @@ TEST(LockFreeQueueTest, PushAndPop) {
   EXPECT_TRUE(q.empty());
 }
 
-TEST(LockFreeQueueTest, FIFO_Order) {
+TEST(LockFreeQueueTest, FIFO_Order)
+{
   LockFreeQueue<int, 8> q;
 
   for (int i = 0; i < 5; ++i) {
@@ -51,9 +63,10 @@ TEST(LockFreeQueueTest, FIFO_Order) {
   EXPECT_TRUE(q.empty());
 }
 
-// ─── Boundary Conditions ────────────────────────────────────────────────────
+// --- Boundary Conditions ---
 
-TEST(LockFreeQueueTest, FullQueue) {
+TEST(LockFreeQueueTest, FullQueue)
+{
   LockFreeQueue<int, 4> q;
 
   // Fill to capacity
@@ -66,13 +79,15 @@ TEST(LockFreeQueueTest, FullQueue) {
   EXPECT_FALSE(q.try_push(99));
 }
 
-TEST(LockFreeQueueTest, EmptyQueuePop) {
+TEST(LockFreeQueueTest, EmptyQueuePop)
+{
   LockFreeQueue<int, 4> q;
   auto val = q.try_pop();
   EXPECT_FALSE(val.has_value());
 }
 
-TEST(LockFreeQueueTest, WrapAround) {
+TEST(LockFreeQueueTest, WrapAround)
+{
   LockFreeQueue<int, 4> q;
 
   // Fill and drain twice to exercise wrap-around
@@ -90,7 +105,8 @@ TEST(LockFreeQueueTest, WrapAround) {
   }
 }
 
-TEST(LockFreeQueueTest, Reset) {
+TEST(LockFreeQueueTest, Reset)
+{
   LockFreeQueue<int, 8> q;
 
   q.try_push(1);
@@ -108,9 +124,10 @@ TEST(LockFreeQueueTest, Reset) {
   EXPECT_EQ(*val, 3);
 }
 
-// ─── Concurrent SPSC Test ───────────────────────────────────────────────────
+// --- Concurrent SPSC Test ---
 
-TEST(LockFreeQueueTest, ConcurrentSPSC) {
+TEST(LockFreeQueueTest, ConcurrentSPSC)
+{
   constexpr int kNumElements = 10000;
   LockFreeQueue<int, 256> q;
 
@@ -120,29 +137,31 @@ TEST(LockFreeQueueTest, ConcurrentSPSC) {
 
   // Producer thread
   std::thread producer([&]() {
-    for (int i = 0; i < kNumElements; ++i) {
-      while (!q.try_push(i)) {
-        // Spin until space available
-        std::this_thread::yield();
+      for (int i = 0; i < kNumElements; ++i) {
+        while (!q.try_push(i)) {
+          // Spin until space available
+          std::this_thread::yield();
+        }
       }
-    }
-    producer_done.store(true, std::memory_order_release);
-  });
+      producer_done.store(true, std::memory_order_release);
+    });
 
   // Consumer thread
   std::thread consumer([&]() {
-    while (true) {
-      auto val = q.try_pop();
-      if (val.has_value()) {
-        received.push_back(*val);
-        if (received.size() == kNumElements) break;
-      } else if (producer_done.load(std::memory_order_acquire) && q.empty()) {
-        break;
-      } else {
-        std::this_thread::yield();
+      while (true) {
+        auto val = q.try_pop();
+        if (val.has_value()) {
+          received.push_back(*val);
+          if (received.size() == kNumElements) {
+            break;
+          }
+        } else if (producer_done.load(std::memory_order_acquire) && q.empty()) {
+          break;
+        } else {
+          std::this_thread::yield();
+        }
       }
-    }
-  });
+    });
 
   producer.join();
   consumer.join();
@@ -154,10 +173,12 @@ TEST(LockFreeQueueTest, ConcurrentSPSC) {
   }
 }
 
-// ─── Struct Type ────────────────────────────────────────────────────────────
+// --- Struct Type ---
 
-TEST(LockFreeQueueTest, StructType) {
-  struct Cmd {
+TEST(LockFreeQueueTest, StructType)
+{
+  struct Cmd
+  {
     int id;
     double value;
   };
