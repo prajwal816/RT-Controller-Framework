@@ -20,7 +20,7 @@ with jitter measurement and real-time metrics publishing.
 
 Usage:
     ros2 launch rt_controller_framework rt_executor_demo.launch.py
-    ros2 launch rt_controller_framework rt_executor_demo.launch.py \\
+    ros2 launch rt_controller_framework rt_executor_demo.launch.py \
         frequency:=500 cycles:=20000
 """
 
