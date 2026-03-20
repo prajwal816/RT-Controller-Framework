@@ -73,7 +73,8 @@ int64_t HighResolutionTimer::get_actual_period_us() const noexcept
   return actual_period_us_;
 }
 
-duration HighResolutionTimer::get_elapsed() const noexcept
+HighResolutionTimer::duration
+HighResolutionTimer::get_elapsed() const noexcept
 {
   return clock::now() - start_time_;
 }
@@ -83,7 +84,8 @@ uint64_t HighResolutionTimer::get_cycle_count() const noexcept
   return cycle_count_;
 }
 
-duration HighResolutionTimer::get_period() const noexcept
+HighResolutionTimer::duration
+HighResolutionTimer::get_period() const noexcept
 {
   return period_;
 }
