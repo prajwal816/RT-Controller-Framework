@@ -1,47 +1,63 @@
-/**
- * @file rt_executor_node.cpp
- * @brief Implementation of the RT executor node.
- *
- * @copyright Copyright (c) 2024. Apache-2.0 License.
- */
+// Copyright 2024 RT Controller Framework Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/// @file rt_executor_node.cpp
+/// @brief Implementation of the RT executor node.
 
 #include "rt_controller_framework/executor/rt_executor_node.hpp"
 
 #include <chrono>
+#include <cinttypes>
 #include <functional>
 
-namespace rt_controller_framework {
-namespace executor {
+namespace rt_controller_framework
+{
+namespace executor
+{
 
 RTExecutorNode::RTExecutorNode(uint32_t frequency_hz, uint64_t num_cycles)
-    : Node("rt_executor_node"),
-      frequency_hz_(frequency_hz),
-      num_cycles_(num_cycles),
-      timer_(frequency_hz),
-      jitter_monitor_(frequency_hz) {
-  // Pre-allocate metrics message: [mean_jitter, max_jitter, stddev, mean_period,
-  //                                 cycle_count, overrun_count]
+: Node("rt_executor_node"),
+  frequency_hz_(frequency_hz),
+  num_cycles_(num_cycles),
+  timer_(frequency_hz),
+  jitter_monitor_(frequency_hz)
+{
+  // Pre-allocate metrics message
   metrics_msg_.data.resize(6, 0.0);
 
   // Create metrics publisher
   metrics_publisher_ = this->create_publisher<std_msgs::msg::Float64MultiArray>(
-      "rt_metrics", rclcpp::SystemDefaultsQoS());
+    "rt_metrics", rclcpp::SystemDefaultsQoS());
 
   // Create a wall timer to periodically publish metrics (1 Hz)
   metrics_timer_ = this->create_wall_timer(
-      std::chrono::seconds(1),
-      std::bind(&RTExecutorNode::publish_metrics, this));
+    std::chrono::seconds(1),
+    std::bind(&RTExecutorNode::publish_metrics, this));
 
-  RCLCPP_INFO(this->get_logger(),
-              "RTExecutorNode created: %u Hz, %lu cycles",
-              frequency_hz_, static_cast<unsigned long>(num_cycles_));
+  RCLCPP_INFO(
+    this->get_logger(),
+    "RTExecutorNode created: %u Hz, %" PRIu64 " cycles",
+    frequency_hz_, num_cycles_);
 }
 
-RTExecutorNode::~RTExecutorNode() {
+RTExecutorNode::~RTExecutorNode()
+{
   stop();
 }
 
-void RTExecutorNode::start() {
+void RTExecutorNode::start()
+{
   if (running_.load()) {
     RCLCPP_WARN(this->get_logger(), "RT loop already running");
     return;
@@ -54,26 +70,28 @@ void RTExecutorNode::start() {
   RCLCPP_INFO(this->get_logger(), "RT loop started on dedicated thread");
 }
 
-void RTExecutorNode::stop() {
+void RTExecutorNode::stop()
+{
   running_.store(false);
   if (rt_thread_.joinable()) {
     rt_thread_.join();
   }
 }
 
-bool RTExecutorNode::is_running() const {
+bool RTExecutorNode::is_running() const
+{
   return running_.load();
 }
 
 realtime_utils::JitterMonitor<1000>::Statistics
-RTExecutorNode::get_statistics() const {
+RTExecutorNode::get_statistics() const
+{
   return jitter_monitor_.get_statistics();
 }
 
-void RTExecutorNode::rt_loop() {
-  // ──────────────────────────────────────────────────────────────────────
-  // REAL-TIME LOOP — No dynamic allocation, no blocking I/O
-  // ──────────────────────────────────────────────────────────────────────
+void RTExecutorNode::rt_loop()
+{
+  // REAL-TIME LOOP -- No dynamic allocation, no blocking I/O
 
   timer_.start();
   uint64_t cycle = 0;
@@ -85,8 +103,7 @@ void RTExecutorNode::rt_loop() {
     // Record jitter
     jitter_monitor_.record_cycle(timer_.get_actual_period_us());
 
-    // Simulated RT workload (minimal to measure pure timing jitter)
-    // In a real system, this would be the control computation.
+    // Simulated RT workload
     volatile double dummy = 0.0;
     for (int i = 0; i < 10; ++i) {
       dummy += static_cast<double>(i) * 0.001;
@@ -104,12 +121,16 @@ void RTExecutorNode::rt_loop() {
   running_.store(false);
 
   // Log final statistics
-  RCLCPP_INFO(this->get_logger(), "\n%s",
-              jitter_monitor_.format_summary().c_str());
+  RCLCPP_INFO(
+    this->get_logger(), "\n%s",
+    jitter_monitor_.format_summary().c_str());
 }
 
-void RTExecutorNode::publish_metrics() {
-  if (!running_.load()) return;
+void RTExecutorNode::publish_metrics()
+{
+  if (!running_.load()) {
+    return;
+  }
 
   auto stats = jitter_monitor_.get_statistics();
 
