@@ -27,7 +27,7 @@ namespace realtime_utils
 HighResolutionTimer::HighResolutionTimer(uint32_t frequency_hz)
 : frequency_hz_(frequency_hz),
   period_(std::chrono::duration_cast<duration>(
-    std::chrono::microseconds(1000000 / frequency_hz))),
+      std::chrono::microseconds(1000000 / frequency_hz))),
   start_time_(clock::now()),
   next_wakeup_(clock::now()),
   last_wakeup_(clock::now())

@@ -123,7 +123,7 @@ private:
   static constexpr std::size_t kBlockAlign =
     alignof(T) > alignof(FreeNode) ? alignof(T) : alignof(FreeNode);
 
-  struct alignas(kBlockAlign) Block
+  struct alignas (kBlockAlign) Block
   {
     uint8_t data[kBlockSize];
   };

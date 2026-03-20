@@ -94,7 +94,7 @@ controller_interface::CallbackReturn RTController::on_configure(
     [this](const std_msgs::msg::Float64MultiArray::SharedPtr msg) {
       // Non-RT callback -- push commands into the lock-free queue
       for (std::size_t i = 0;
-        i < msg->data.size() && i < joint_names_.size(); ++i)
+      i < msg->data.size() && i < joint_names_.size(); ++i)
       {
         RTCommand cmd;
         cmd.joint_index = i;
