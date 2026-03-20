@@ -1,5 +1,8 @@
 # RT Controller Framework
 
+[![ROS2 Build & Test](https://github.com/<owner>/RT-Controller-Framework/actions/workflows/ros2_ci.yml/badge.svg)](https://github.com/<owner>/RT-Controller-Framework/actions/workflows/ros2_ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+
 A **production-quality, modular hard real-time controller framework** for ROS2 Humble, compatible with `ros2_control`. Achieves **deterministic 1 kHz control loops** with **< 50 µs jitter** using lock-free data structures, pre-allocated memory, and high-resolution timing.
 
 ---
@@ -92,6 +95,7 @@ Both plugins are registered via `pluginlib` XML descriptors and loaded by the st
 | **Overrun detection & recovery** | Timer detects missed deadlines and resets the wakeup target to prevent cascading delays |
 | **Pre-allocated memory pool** | O(1) alloc/free via intrusive free-list for RT-safe dynamic data |
 | **Minimal RT thread workload** | PD computation + queue drain + pointer-based HW access only |
+| **RT thread configuration** | `SCHED_FIFO` priority, `mlockall()`, CPU affinity pinning via `rt_thread_config` utility |
 
 ---
 
@@ -101,8 +105,14 @@ Both plugins are registered via `pluginlib` XML descriptors and loaded by the st
 RT-Controller-Framework/
 ├── CMakeLists.txt                    # C++17 ament_cmake build system
 ├── package.xml                       # ROS2 format-3 manifest
+├── LICENSE                           # Apache-2.0
+├── CHANGELOG.md                      # Version history
+├── .gitignore                        # ROS2/C++ ignore rules
 ├── rt_controller_plugin.xml          # pluginlib: RT controller
 ├── rt_hardware_plugin.xml            # pluginlib: Mock hardware
+│
+├── .github/workflows/
+│   └── ros2_ci.yml                   # GitHub Actions CI (build + test + lint)
 │
 ├── include/rt_controller_framework/
 │   ├── controller/
@@ -115,7 +125,8 @@ RT-Controller-Framework/
 │       ├── high_resolution_timer.hpp # Periodic timer
 │       ├── jitter_monitor.hpp        # Jitter statistics
 │       ├── lock_free_queue.hpp       # SPSC ring buffer
-│       └── memory_pool.hpp           # Pre-allocated block pool
+│       ├── memory_pool.hpp           # Pre-allocated block pool
+│       └── rt_thread_config.hpp      # RT thread priority/affinity/mlockall
 │
 ├── src/
 │   ├── controller/
@@ -127,7 +138,8 @@ RT-Controller-Framework/
 │   │   └── mock_actuator_system.cpp
 │   └── realtime_utils/
 │       ├── high_resolution_timer.cpp
-│       └── jitter_monitor.cpp
+│       ├── jitter_monitor.cpp
+│       └── rt_thread_config.cpp      # SCHED_FIFO, mlockall, CPU affinity
 │
 ├── test/
 │   ├── test_lock_free_queue.cpp
@@ -136,6 +148,9 @@ RT-Controller-Framework/
 │   ├── test_high_resolution_timer.cpp
 │   ├── test_mock_actuator.cpp
 │   └── test_rt_controller.cpp
+│
+├── urdf/
+│   └── mock_robot.urdf               # 3-DOF robot with ros2_control tags
 │
 ├── config/
 │   ├── rt_controller_config.yaml
@@ -250,20 +265,35 @@ Simulated performance on a standard Linux desktop (non-PREEMPT_RT kernel):
 
 ### Achieving Optimal Performance
 
-For production deployment on a real-time Linux system:
+The framework provides a built-in `rt_thread_config` utility for production deployment:
+
+```cpp
+#include "rt_controller_framework/realtime_utils/rt_thread_config.hpp"
+using namespace rt_controller_framework::realtime_utils;
+
+// Apply full RT configuration: SCHED_FIFO priority 80, pin to cores 2,3
+bool ok = configure_rt_thread(80, {2, 3});
+
+// Or configure individually:
+auto r1 = lock_memory();               // mlockall(MCL_CURRENT | MCL_FUTURE)
+auto r2 = set_thread_rt_priority(80);  // SCHED_FIFO
+auto r3 = set_cpu_affinity({2, 3});    // Pin to isolated cores
+
+// Diagnostics
+std::cout << get_rt_system_info();     // Kernel, PREEMPT_RT, isolated CPUs
+```
+
+System-level setup for best results:
 
 ```bash
 # 1. Install PREEMPT_RT kernel
 sudo apt install linux-image-rt-amd64
 
-# 2. Isolate CPU cores for RT
-# Add to GRUB: isolcpus=2,3 nohz_full=2,3 rcu_nocbs=2,3
+# 2. Isolate CPU cores for RT (add to GRUB)
+# GRUB_CMDLINE_LINUX="isolcpus=2,3 nohz_full=2,3 rcu_nocbs=2,3"
 
-# 3. Set RT thread priority (in your launcher)
+# 3. Run with RT privileges
 sudo chrt -f 80 ros2 run rt_controller_framework rt_executor_node
-
-# 4. Lock memory
-# The framework uses mlockall() when available
 ```
 
 ---
@@ -278,9 +308,12 @@ sudo chrt -f 80 ros2 run rt_controller_framework rt_executor_node
 | **Documentation** | Doxygen with full API coverage |
 | **ROS2 Compatibility** | Humble (LTS) |
 | **Plugin System** | `pluginlib` with XML descriptors |
+| **CI/CD** | GitHub Actions (build + test + lint on ROS2 Humble Docker) |
+| **RT Configuration** | `SCHED_FIFO`, `mlockall`, CPU affinity via `rt_thread_config` |
+| **Robot Model** | Standalone URDF with visual/collision/inertial elements |
 
 ---
 
 ## License
 
-Apache-2.0
+[Apache-2.0](LICENSE)
