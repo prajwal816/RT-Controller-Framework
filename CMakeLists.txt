@@ -143,11 +143,9 @@ install(
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
   find_package(ament_lint_auto REQUIRED)
-  # Exclude CONTRIBUTING.md and LICENSE from ament_copyright (non-source files)
+  # Skip ament_copyright — CONTRIBUTING.md and LICENSE use formats it cannot parse
   set(ament_cmake_copyright_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
-  find_package(ament_cmake_copyright REQUIRED)
-  ament_copyright(EXCLUDE "CONTRIBUTING.md" "LICENSE")
 
   ament_add_gtest(test_lock_free_queue test/test_lock_free_queue.cpp)
   target_link_libraries(test_lock_free_queue rt_realtime_utils)

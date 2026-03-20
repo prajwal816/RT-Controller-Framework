@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""\
+"""
 Launch file for the RT Controller with mock hardware via ros2_control.
 
 Spawns controller_manager with the mock actuator system and RT controller.

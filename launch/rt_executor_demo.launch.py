@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""\
+"""
 Launch file for the standalone RT Executor demo node.
 
 Runs the RT executor node which demonstrates a 1kHz deterministic loop
@@ -20,7 +20,7 @@ with jitter measurement and real-time metrics publishing.
 
 Usage:
     ros2 launch rt_controller_framework rt_executor_demo.launch.py
-    ros2 launch rt_controller_framework rt_executor_demo.launch.py \
+    ros2 launch rt_controller_framework rt_executor_demo.launch.py \\
         frequency:=500 cycles:=20000
 """
 
