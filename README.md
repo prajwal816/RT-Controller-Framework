@@ -1,6 +1,6 @@
 # RT Controller Framework
 
-[![ROS2 Build & Test](https://github.com/<owner>/RT-Controller-Framework/actions/workflows/ros2_ci.yml/badge.svg)](https://github.com/<owner>/RT-Controller-Framework/actions/workflows/ros2_ci.yml)
+[![ROS2 Build & Test](https://github.com/prajwal816/RT-Controller-Framework/actions/workflows/ros2_ci.yml/badge.svg)](https://github.com/prajwal816/RT-Controller-Framework/actions/workflows/ros2_ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 A **production-quality, modular hard real-time controller framework** for ROS2 Humble, compatible with `ros2_control`. Achieves **deterministic 1 kHz control loops** with **< 50 µs jitter** using lock-free data structures, pre-allocated memory, and high-resolution timing.
