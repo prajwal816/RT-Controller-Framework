@@ -1,9 +1,19 @@
-/**
- * @file rt_controller.cpp
- * @brief Implementation of the real-time PD controller plugin.
- *
- * @copyright Copyright (c) 2024. Apache-2.0 License.
- */
+// Copyright 2024 RT Controller Framework Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/// @file rt_controller.cpp
+/// @brief Implementation of the real-time PD controller plugin.
 
 #include "rt_controller_framework/controller/rt_controller.hpp"
 
@@ -14,20 +24,23 @@
 #include "controller_interface/helpers.hpp"
 #include "rclcpp/qos.hpp"
 
-namespace rt_controller_framework {
-namespace controller {
+namespace rt_controller_framework
+{
+namespace controller
+{
 
 RTController::RTController()
-    : controller_interface::ControllerInterface() {}
+: controller_interface::ControllerInterface() {}
 
-controller_interface::CallbackReturn RTController::on_init() {
+controller_interface::CallbackReturn RTController::on_init()
+{
   try {
     // Declare parameters with defaults
     auto_declare<std::vector<std::string>>("joints", std::vector<std::string>());
     auto_declare<std::vector<double>>("kp", std::vector<double>());
     auto_declare<std::vector<double>>("kd", std::vector<double>());
     auto_declare<double>("control_frequency", 1000.0);
-  } catch (const std::exception& e) {
+  } catch (const std::exception & e) {
     RCLCPP_ERROR(get_node()->get_logger(), "on_init failed: %s", e.what());
     return controller_interface::CallbackReturn::ERROR;
   }
@@ -36,7 +49,8 @@ controller_interface::CallbackReturn RTController::on_init() {
 }
 
 controller_interface::CallbackReturn RTController::on_configure(
-    const rclcpp_lifecycle::State& /*previous_state*/) {
+  const rclcpp_lifecycle::State & /*previous_state*/)
+{
   // Read parameters
   joint_names_ = get_node()->get_parameter("joints").as_string_array();
   if (joint_names_.empty()) {
@@ -46,7 +60,8 @@ controller_interface::CallbackReturn RTController::on_configure(
 
   const auto kp = get_node()->get_parameter("kp").as_double_array();
   const auto kd = get_node()->get_parameter("kd").as_double_array();
-  control_frequency_ = get_node()->get_parameter("control_frequency").as_double();
+  control_frequency_ =
+    get_node()->get_parameter("control_frequency").as_double();
 
   const auto n = joint_names_.size();
 
@@ -70,41 +85,44 @@ controller_interface::CallbackReturn RTController::on_configure(
 
   // Initialize jitter monitor
   jitter_monitor_ = std::make_unique<realtime_utils::JitterMonitor<1000>>(
-      static_cast<uint32_t>(control_frequency_));
+    static_cast<uint32_t>(control_frequency_));
 
   // Create command subscriber (non-RT callback pushes into lock-free queue)
   command_subscriber_ = get_node()->create_subscription<
-      std_msgs::msg::Float64MultiArray>(
-      "~/commands", rclcpp::SystemDefaultsQoS(),
-      [this](const std_msgs::msg::Float64MultiArray::SharedPtr msg) {
-        // Non-RT callback — push commands into the lock-free queue
-        for (std::size_t i = 0; i < msg->data.size() && i < joint_names_.size();
-             ++i) {
-          RTCommand cmd;
-          cmd.joint_index = i;
-          cmd.target_position = msg->data[i];
-          cmd.target_velocity = 0.0;
-          command_queue_.try_push(cmd);  // Drop if full (RT-safe)
-        }
-      });
+    std_msgs::msg::Float64MultiArray>(
+    "~/commands", rclcpp::SystemDefaultsQoS(),
+    [this](const std_msgs::msg::Float64MultiArray::SharedPtr msg) {
+      // Non-RT callback -- push commands into the lock-free queue
+      for (std::size_t i = 0;
+        i < msg->data.size() && i < joint_names_.size(); ++i)
+      {
+        RTCommand cmd;
+        cmd.joint_index = i;
+        cmd.target_position = msg->data[i];
+        cmd.target_velocity = 0.0;
+        command_queue_.try_push(cmd);  // Drop if full (RT-safe)
+      }
+    });
 
   // Create state publisher
   state_publisher_ = get_node()->create_publisher<
-      std_msgs::msg::Float64MultiArray>(
-      "~/state", rclcpp::SystemDefaultsQoS());
+    std_msgs::msg::Float64MultiArray>(
+    "~/state", rclcpp::SystemDefaultsQoS());
 
-  RCLCPP_INFO(get_node()->get_logger(),
-              "Configured RTController with %zu joints at %.0f Hz",
-              n, control_frequency_);
+  RCLCPP_INFO(
+    get_node()->get_logger(),
+    "Configured RTController with %zu joints at %.0f Hz",
+    n, control_frequency_);
 
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
 controller_interface::CallbackReturn RTController::on_activate(
-    const rclcpp_lifecycle::State& /*previous_state*/) {
+  const rclcpp_lifecycle::State & /*previous_state*/)
+{
   // Initialize target positions from current state
   for (std::size_t i = 0; i < joint_names_.size(); ++i) {
-    const auto& pos_interface = state_interfaces_[i * 3];  // position
+    const auto & pos_interface = state_interfaces_[i * 3];  // position
     target_positions_[i] = pos_interface.get_value();
   }
 
@@ -117,20 +135,23 @@ controller_interface::CallbackReturn RTController::on_activate(
 }
 
 controller_interface::CallbackReturn RTController::on_deactivate(
-    const rclcpp_lifecycle::State& /*previous_state*/) {
+  const rclcpp_lifecycle::State & /*previous_state*/)
+{
   // Log final jitter statistics
-  RCLCPP_INFO(get_node()->get_logger(), "\n%s",
-              jitter_monitor_->format_summary().c_str());
+  RCLCPP_INFO(
+    get_node()->get_logger(), "\n%s",
+    jitter_monitor_->format_summary().c_str());
 
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
 controller_interface::InterfaceConfiguration
-RTController::command_interface_configuration() const {
+RTController::command_interface_configuration() const
+{
   controller_interface::InterfaceConfiguration config;
   config.type = controller_interface::interface_configuration_type::INDIVIDUAL;
 
-  for (const auto& joint_name : joint_names_) {
+  for (const auto & joint_name : joint_names_) {
     config.names.push_back(joint_name + "/position");
     config.names.push_back(joint_name + "/velocity");
     config.names.push_back(joint_name + "/effort");
@@ -140,11 +161,12 @@ RTController::command_interface_configuration() const {
 }
 
 controller_interface::InterfaceConfiguration
-RTController::state_interface_configuration() const {
+RTController::state_interface_configuration() const
+{
   controller_interface::InterfaceConfiguration config;
   config.type = controller_interface::interface_configuration_type::INDIVIDUAL;
 
-  for (const auto& joint_name : joint_names_) {
+  for (const auto & joint_name : joint_names_) {
     config.names.push_back(joint_name + "/position");
     config.names.push_back(joint_name + "/velocity");
     config.names.push_back(joint_name + "/effort");
@@ -154,18 +176,19 @@ RTController::state_interface_configuration() const {
 }
 
 controller_interface::return_type RTController::update(
-    const rclcpp::Time& /*time*/,
-    const rclcpp::Duration& /*period*/) {
+  const rclcpp::Time & /*time*/,
+  const rclcpp::Duration & /*period*/)
+{
   // ──────────────────────────────────────────────────────────────────────
-  // HOT PATH — No dynamic allocation, no blocking, no exceptions
+  // HOT PATH -- No dynamic allocation, no blocking, no exceptions
   // ──────────────────────────────────────────────────────────────────────
 
   // Measure jitter
   auto now = std::chrono::steady_clock::now();
   if (!first_update_) {
     auto dt_us = std::chrono::duration_cast<std::chrono::microseconds>(
-                     now - last_update_time_)
-                     .count();
+      now - last_update_time_)
+      .count();
     jitter_monitor_->record_cycle(dt_us);
   }
   first_update_ = false;
@@ -182,16 +205,17 @@ controller_interface::return_type RTController::update(
   // PD control for each joint
   const auto n = joint_names_.size();
   for (std::size_t i = 0; i < n; ++i) {
-    // Read current state (no allocation — direct pointer access)
+    // Read current state (no allocation -- direct pointer access)
     const double current_pos = state_interfaces_[i * 3 + 0].get_value();
     const double current_vel = state_interfaces_[i * 3 + 1].get_value();
 
     // Compute PD output
     const double pos_error = target_positions_[i] - current_pos;
     const double vel_error = target_velocities_[i] - current_vel;
-    const double effort = kp_gains_[i] * pos_error + kd_gains_[i] * vel_error;
+    const double effort =
+      kp_gains_[i] * pos_error + kd_gains_[i] * vel_error;
 
-    // Write commands (no allocation — direct pointer access)
+    // Write commands (no allocation -- direct pointer access)
     command_interfaces_[i * 3 + 0].set_value(target_positions_[i]);
     command_interfaces_[i * 3 + 1].set_value(target_velocities_[i]);
     command_interfaces_[i * 3 + 2].set_value(effort);
@@ -214,5 +238,5 @@ controller_interface::return_type RTController::update(
 #include "pluginlib/class_list_macros.hpp"
 
 PLUGINLIB_EXPORT_CLASS(
-    rt_controller_framework::controller::RTController,
-    controller_interface::ControllerInterface)
+  rt_controller_framework::controller::RTController,
+  controller_interface::ControllerInterface)
