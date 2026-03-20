@@ -43,6 +43,7 @@ include_directories(include)
 add_library(rt_realtime_utils SHARED
   src/realtime_utils/high_resolution_timer.cpp
   src/realtime_utils/jitter_monitor.cpp
+  src/realtime_utils/rt_thread_config.cpp
 )
 target_include_directories(rt_realtime_utils PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -127,7 +128,7 @@ install(
 )
 
 install(
-  DIRECTORY config launch
+  DIRECTORY config launch urdf
   DESTINATION share/${PROJECT_NAME}
 )
 
