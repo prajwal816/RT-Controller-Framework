@@ -20,6 +20,7 @@
 
 #include <array>
 #include <chrono>
+#include <cinttypes>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
