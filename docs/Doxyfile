@@ -1,0 +1,38 @@
+# Doxyfile for RT Controller Framework
+# Simplified Doxygen configuration for API documentation generation.
+
+PROJECT_NAME           = "RT Controller Framework"
+PROJECT_NUMBER         = 1.0.0
+PROJECT_BRIEF          = "Hard real-time controller framework for ros2_control"
+
+OUTPUT_DIRECTORY       = docs/generated
+INPUT                  = include src
+RECURSIVE              = YES
+FILE_PATTERNS          = *.hpp *.cpp *.h
+
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+
+HTML_OUTPUT            = html
+HTML_COLORSTYLE_HUE    = 220
+HTML_COLORSTYLE_SAT    = 100
+
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+
+HAVE_DOT               = NO
+CLASS_DIAGRAMS         = YES
+
+QUIET                  = YES
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+
+SORT_MEMBER_DOCS       = YES
+SORT_BRIEF_DOCS        = YES
+
+OPTIMIZE_OUTPUT_FOR_C  = NO
+BUILTIN_STL_SUPPORT    = YES
