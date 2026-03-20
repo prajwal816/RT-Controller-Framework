@@ -14,8 +14,10 @@
 
 #include <array>
 #include <chrono>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <string>
 
 namespace rt_controller_framework {
@@ -206,8 +208,5 @@ class JitterMonitor {
 
 }  // namespace realtime_utils
 }  // namespace rt_controller_framework
-
-// Include cmath for std::sqrt used in the template
-#include <cmath>
 
 #endif  // RT_CONTROLLER_FRAMEWORK__REALTIME_UTILS__JITTER_MONITOR_HPP_
