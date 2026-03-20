@@ -1,0 +1,37 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# RT Controller Configuration
+# ═══════════════════════════════════════════════════════════════════════════════
+# Configuration for the real-time PD controller plugin.
+# All parameters are loaded at configure-time; no dynamic allocation occurs
+# during the RT update loop.
+
+controller_manager:
+  ros__parameters:
+    update_rate: 1000  # Hz — control loop frequency
+
+    rt_controller:
+      type: rt_controller_framework/RTController
+
+    mock_actuator_system:
+      type: rt_controller_framework/MockActuatorSystem
+
+rt_controller:
+  ros__parameters:
+    # Joint names (must match hardware interface)
+    joints:
+      - joint_1
+      - joint_2
+      - joint_3
+
+    # PD gains per joint
+    # Kp: proportional gain (position tracking stiffness)
+    kp: [150.0, 150.0, 150.0]
+
+    # Kd: derivative gain (velocity damping)
+    kd: [15.0, 15.0, 15.0]
+
+    # Control frequency (Hz)
+    control_frequency: 1000.0
+
+    # Jitter alarm threshold (microseconds)
+    jitter_alarm_threshold_us: 50.0

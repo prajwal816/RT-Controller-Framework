@@ -1,0 +1,35 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Mock Hardware Configuration
+# ═══════════════════════════════════════════════════════════════════════════════
+# Configuration for the mock actuator system hardware interface.
+# Defines joint properties and simulation parameters.
+
+mock_actuator_system:
+  ros__parameters:
+    # Simulation parameters
+    inertia: 1.0       # kg·m² — rotational inertia per joint
+    damping: 0.1       # N·m·s/rad — viscous damping coefficient
+    control_period: 0.001  # seconds — 1kHz update period
+
+    # Joint definitions
+    joints:
+      - name: joint_1
+        initial_position: 0.0
+        position_min: -3.14159
+        position_max: 3.14159
+        velocity_max: 6.28318
+        effort_max: 100.0
+
+      - name: joint_2
+        initial_position: 0.0
+        position_min: -3.14159
+        position_max: 3.14159
+        velocity_max: 6.28318
+        effort_max: 100.0
+
+      - name: joint_3
+        initial_position: 0.0
+        position_min: -1.5708
+        position_max: 1.5708
+        velocity_max: 3.14159
+        effort_max: 50.0

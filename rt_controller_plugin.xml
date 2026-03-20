@@ -1,0 +1,10 @@
+<library path="rt_controller">
+  <class name="rt_controller_framework/RTController"
+         type="rt_controller_framework::controller::RTController"
+         base_class_type="controller_interface::ControllerInterface">
+    <description>
+      Real-time PD controller with lock-free command queue and jitter monitoring.
+      Achieves deterministic 1kHz control with sub-50 microsecond jitter.
+    </description>
+  </class>
+</library>

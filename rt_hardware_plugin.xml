@@ -1,0 +1,10 @@
+<library path="rt_hardware_interface">
+  <class name="rt_controller_framework/MockActuatorSystem"
+         type="rt_controller_framework::hardware_interface::MockActuatorSystem"
+         base_class_type="hardware_interface::SystemInterface">
+    <description>
+      Mock actuator system interface with position, velocity, and effort modes.
+      Simulates actuator dynamics via Euler integration for testing and development.
+    </description>
+  </class>
+</library>
