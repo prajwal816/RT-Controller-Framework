@@ -1,7 +1,16 @@
-/**
- * @file test_jitter_monitor.cpp
- * @brief GTest unit tests for the jitter measurement module.
- */
+// Copyright 2024 RT Controller Framework Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <gtest/gtest.h>
 
@@ -11,9 +20,10 @@
 
 using rt_controller_framework::realtime_utils::JitterMonitor;
 
-// ─── Basic Statistics ───────────────────────────────────────────────────────
+// --- Basic Statistics ---
 
-TEST(JitterMonitorTest, InitialState) {
+TEST(JitterMonitorTest, InitialState)
+{
   JitterMonitor<100> monitor(1000);  // 1kHz
   auto stats = monitor.get_statistics();
 
@@ -24,10 +34,11 @@ TEST(JitterMonitorTest, InitialState) {
   EXPECT_EQ(stats.expected_period_us, 1000);
 }
 
-TEST(JitterMonitorTest, PerfectTiming) {
+TEST(JitterMonitorTest, PerfectTiming)
+{
   JitterMonitor<100> monitor(1000);
 
-  // Record cycles with exactly 1000 µs period
+  // Record cycles with exactly 1000 us period
   for (int i = 0; i < 100; ++i) {
     monitor.record_cycle(1000);
   }
@@ -40,13 +51,14 @@ TEST(JitterMonitorTest, PerfectTiming) {
   EXPECT_EQ(stats.overrun_count, 0u);
 }
 
-TEST(JitterMonitorTest, KnownJitter) {
+TEST(JitterMonitorTest, KnownJitter)
+{
   JitterMonitor<100> monitor(1000);
 
-  // Record cycles alternating between 990 and 1010 µs
+  // Record cycles alternating between 990 and 1010 us
   for (int i = 0; i < 50; ++i) {
-    monitor.record_cycle(990);   // jitter = 10 µs
-    monitor.record_cycle(1010);  // jitter = 10 µs
+    monitor.record_cycle(990);   // jitter = 10 us
+    monitor.record_cycle(1010);  // jitter = 10 us
   }
 
   auto stats = monitor.get_statistics();
@@ -57,21 +69,23 @@ TEST(JitterMonitorTest, KnownJitter) {
   EXPECT_EQ(stats.overrun_count, 0u);
 }
 
-TEST(JitterMonitorTest, MaxJitter) {
+TEST(JitterMonitorTest, MaxJitter)
+{
   JitterMonitor<100> monitor(1000);
 
   monitor.record_cycle(1000);
   monitor.record_cycle(1000);
-  monitor.record_cycle(1050);  // 50 µs jitter
+  monitor.record_cycle(1050);  // 50 us jitter
   monitor.record_cycle(1000);
 
   auto stats = monitor.get_statistics();
   EXPECT_DOUBLE_EQ(stats.max_jitter_us, 50.0);
 }
 
-// ─── Overrun Detection ──────────────────────────────────────────────────────
+// --- Overrun Detection ---
 
-TEST(JitterMonitorTest, OverrunDetection) {
+TEST(JitterMonitorTest, OverrunDetection)
+{
   JitterMonitor<100> monitor(1000);
 
   // Normal cycles
@@ -79,7 +93,7 @@ TEST(JitterMonitorTest, OverrunDetection) {
     monitor.record_cycle(1000);
   }
 
-  // Overrun cycle (> 2× expected period = 2000 µs)
+  // Overrun cycle (> 2x expected period = 2000 us)
   monitor.record_cycle(2100);
   monitor.record_cycle(2500);
 
@@ -87,9 +101,10 @@ TEST(JitterMonitorTest, OverrunDetection) {
   EXPECT_EQ(stats.overrun_count, 2u);
 }
 
-// ─── Ring Buffer ────────────────────────────────────────────────────────────
+// --- Ring Buffer ---
 
-TEST(JitterMonitorTest, BufferSampleCount) {
+TEST(JitterMonitorTest, BufferSampleCount)
+{
   JitterMonitor<10> monitor(1000);
 
   // Fill partially
@@ -104,17 +119,18 @@ TEST(JitterMonitorTest, BufferSampleCount) {
   }
   EXPECT_EQ(monitor.buffer_sample_count(), 10u);
 
-  // Overfill — should wrap
+  // Overfill -- should wrap
   for (int i = 10; i < 15; ++i) {
     monitor.record_cycle(1000 + i);
   }
   EXPECT_EQ(monitor.buffer_sample_count(), 10u);  // Capped at buffer size
 }
 
-TEST(JitterMonitorTest, GetJitterSample) {
+TEST(JitterMonitorTest, GetJitterSample)
+{
   JitterMonitor<10> monitor(1000);
 
-  // Push 5 samples with known jitter
+  // Push 4 samples with known jitter
   monitor.record_cycle(1010);  // jitter = 10
   monitor.record_cycle(1020);  // jitter = 20
   monitor.record_cycle(980);   // jitter = 20
@@ -129,9 +145,10 @@ TEST(JitterMonitorTest, GetJitterSample) {
   EXPECT_DOUBLE_EQ(monitor.get_jitter_sample(10), 0.0);
 }
 
-// ─── Reset ──────────────────────────────────────────────────────────────────
+// --- Reset ---
 
-TEST(JitterMonitorTest, Reset) {
+TEST(JitterMonitorTest, Reset)
+{
   JitterMonitor<100> monitor(1000);
 
   for (int i = 0; i < 50; ++i) {
@@ -148,9 +165,10 @@ TEST(JitterMonitorTest, Reset) {
   EXPECT_EQ(monitor.buffer_sample_count(), 0u);
 }
 
-// ─── Format Summary ─────────────────────────────────────────────────────────
+// --- Format Summary ---
 
-TEST(JitterMonitorTest, FormatSummary) {
+TEST(JitterMonitorTest, FormatSummary)
+{
   JitterMonitor<100> monitor(1000);
 
   monitor.record_cycle(1000);
@@ -162,14 +180,15 @@ TEST(JitterMonitorTest, FormatSummary) {
   EXPECT_NE(summary.find("Cycles"), std::string::npos);
 }
 
-// ─── Standard Deviation ─────────────────────────────────────────────────────
+// --- Standard Deviation ---
 
-TEST(JitterMonitorTest, StddevComputation) {
+TEST(JitterMonitorTest, StddevComputation)
+{
   JitterMonitor<100> monitor(1000);
 
-  // All same jitter → stddev should be 0
+  // All same jitter -> stddev should be 0
   for (int i = 0; i < 100; ++i) {
-    monitor.record_cycle(1010);  // constant 10 µs jitter
+    monitor.record_cycle(1010);  // constant 10 us jitter
   }
 
   auto stats = monitor.get_statistics();

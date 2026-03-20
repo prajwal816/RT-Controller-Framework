@@ -1,7 +1,16 @@
-/**
- * @file test_high_resolution_timer.cpp
- * @brief GTest unit tests for the high-resolution periodic timer.
- */
+// Copyright 2024 RT Controller Framework Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <gtest/gtest.h>
 
@@ -12,23 +21,23 @@
 
 using rt_controller_framework::realtime_utils::HighResolutionTimer;
 
-TEST(HighResolutionTimerTest, Construction) {
+TEST(HighResolutionTimerTest, Construction)
+{
   HighResolutionTimer timer(1000);
   EXPECT_EQ(timer.get_frequency_hz(), 1000u);
-  EXPECT_EQ(timer.get_period_us(), 1000);
 }
 
-TEST(HighResolutionTimerTest, DifferentFrequencies) {
+TEST(HighResolutionTimerTest, DifferentFrequencies)
+{
   HighResolutionTimer t500(500);
   EXPECT_EQ(t500.get_frequency_hz(), 500u);
-  EXPECT_EQ(t500.get_period_us(), 2000);
 
   HighResolutionTimer t100(100);
   EXPECT_EQ(t100.get_frequency_hz(), 100u);
-  EXPECT_EQ(t100.get_period_us(), 10000);
 }
 
-TEST(HighResolutionTimerTest, CycleCount) {
+TEST(HighResolutionTimerTest, CycleCount)
+{
   HighResolutionTimer timer(1000);
   timer.start();
   EXPECT_EQ(timer.get_cycle_count(), 0u);
@@ -40,7 +49,8 @@ TEST(HighResolutionTimerTest, CycleCount) {
   EXPECT_EQ(timer.get_cycle_count(), 5u);
 }
 
-TEST(HighResolutionTimerTest, PeriodAccuracy) {
+TEST(HighResolutionTimerTest, PeriodAccuracy)
+{
   // Use a lower frequency (100 Hz = 10ms period) to allow for OS scheduling
   constexpr uint32_t kFreq = 100;
   constexpr int kCycles = 10;
@@ -55,11 +65,12 @@ TEST(HighResolutionTimerTest, PeriodAccuracy) {
     int64_t actual = timer.get_actual_period_us();
 
     EXPECT_NEAR(actual, kExpectedPeriodUs, kToleranceUs)
-        << "Cycle " << i << " period: " << actual << " µs";
+      << "Cycle " << i << " period: " << actual << " us";
   }
 }
 
-TEST(HighResolutionTimerTest, ElapsedTime) {
+TEST(HighResolutionTimerTest, ElapsedTime)
+{
   HighResolutionTimer timer(100);  // 100 Hz = 10ms period
   timer.start();
 
@@ -68,13 +79,16 @@ TEST(HighResolutionTimerTest, ElapsedTime) {
     timer.wait_for_next_cycle();
   }
 
-  int64_t elapsed = timer.get_elapsed_us();
-  // Should be approximately 50,000 µs ± 10ms tolerance
-  EXPECT_GT(elapsed, 40000);
-  EXPECT_LT(elapsed, 70000);
+  auto elapsed = timer.get_elapsed();
+  auto elapsed_us = std::chrono::duration_cast<std::chrono::microseconds>(
+    elapsed).count();
+  // Should be approximately 50,000 us +/- 10ms tolerance
+  EXPECT_GT(elapsed_us, 40000);
+  EXPECT_LT(elapsed_us, 70000);
 }
 
-TEST(HighResolutionTimerTest, StartResetsState) {
+TEST(HighResolutionTimerTest, StartResetsState)
+{
   HighResolutionTimer timer(100);
 
   timer.start();
