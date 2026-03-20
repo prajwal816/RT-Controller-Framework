@@ -18,10 +18,10 @@ Launch file for the standalone RT Executor demo node.
 Runs the RT executor node which demonstrates a 1kHz deterministic loop
 with jitter measurement and real-time metrics publishing.
 
-Usage:
+Usage::
+
     ros2 launch rt_controller_framework rt_executor_demo.launch.py
-    ros2 launch rt_controller_framework rt_executor_demo.launch.py \\
-        frequency:=500 cycles:=20000
+    ros2 launch rt_controller_framework rt_executor_demo.launch.py frequency:=500 cycles:=20000
 """
 
 from launch import LaunchDescription
@@ -30,7 +30,7 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    # ─── Launch Arguments ────────────────────────────────────────────────
+    # --- Launch Arguments ---
     frequency_arg = DeclareLaunchArgument(
         'frequency',
         default_value='1000',
@@ -43,7 +43,7 @@ def generate_launch_description():
         description='Number of cycles to run (0 = infinite)'
     )
 
-    # ─── RT Executor Node ────────────────────────────────────────────────
+    # --- RT Executor Node ---
     rt_executor_node = Node(
         package='rt_controller_framework',
         executable='rt_executor_node',
